@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今天吃什麼轉盤</title>
+<style>
+:root{--bg:#f2ece0;--onbg:#3a3128;--ink:#3a3128;--paper:#fffdf8;--acc:#7d6b58;--acc2:#d9b97a;--soft:#ece3d2;--line:#cbbda5}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);transition:background .4s;font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink);display:flex;justify-content:center}
+main{width:100%;max-width:480px;padding:32px 18px 80px}
+h1,.title,#result,.tier b{font-family:"Noto Serif TC","Songti TC","PMingLiU",serif}
+h1{margin:0 0 8px;font-size:2.1rem;color:var(--onbg);text-align:center;letter-spacing:.12em;font-weight:600}
+.sub{margin:0 0 26px;text-align:center;color:var(--onbg);opacity:.7;letter-spacing:.08em}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc2);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.tier{display:flex;align-items:center;gap:16px;width:100%;margin-bottom:14px;padding:18px 18px 18px 26px;background:var(--paper);border-radius:6px;text-align:left;box-shadow:inset 8px 0 0 var(--tc),0 1px 0 rgba(0,0,0,.05),0 8px 20px rgba(60,40,20,.08);transition:transform .12s}
+.tier:active{transform:translateY(2px)}
+.tier .ic{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 22%,white);font-size:1.8rem}
+.tier b{display:block;font-size:1.25rem;font-weight:600}
+.tier span.t{display:block;font-size:.92rem;opacity:.7;margin-top:2px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ghost{background:transparent;color:var(--onbg);border:1px solid var(--onbg);padding:7px 14px;border-radius:999px;opacity:.85}
+.title{color:var(--onbg);font-size:1.3rem;font-weight:600;letter-spacing:.06em;text-align:center}
+.stage{position:relative;width:min(100%,340px);aspect-ratio:1;margin:20px auto 8px}
+#wheel{width:100%;height:100%;display:block;filter:drop-shadow(0 10px 16px rgba(0,0,0,.22))}
+.ptr{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:30px solid var(--acc2);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));z-index:2}
+#spin{display:block;margin:16px auto 0;padding:13px 46px;font-size:1.25rem;font-weight:700;letter-spacing:.2em;background:var(--acc2);color:#2b2118;border-radius:999px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+#spin:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+#result{min-height:2.2em;margin:16px 0 4px;text-align:center;font-size:1.5rem;font-weight:600;color:var(--onbg)}
+.card{background:var(--paper);color:var(--ink);border-radius:6px;padding:16px;margin-top:16px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+.card h2{margin:0 0 10px;font-size:1.05rem;font-weight:600;letter-spacing:.06em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:4px 5px 4px 12px}
+.chip button{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;line-height:1;font-size:.75rem}
+.add{display:flex;gap:8px}
+.add input{flex:1;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:#2b2118}
+.add button,.small{background:var(--acc);color:#fff;padding:10px 16px;border-radius:6px}
+#msg{min-height:1.4em;margin:8px 0 0;font-size:.9rem;color:#a0453a}
+.row{display:flex;gap:8px;justify-content:space-between;align-items:center}
+.small{padding:6px 12px;font-size:.88rem}
+.hist{margin:0;padding:0;list-style:none}
+.hist li{padding:7px 0;border-bottom:1px dashed var(--line)}
+.hist li:last-child{border:0}
+.empty{opacity:.65}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9}
+.qback{position:fixed;inset:0;z-index:20;background:rgba(40,28,18,.5);display:flex;align-items:center;justify-content:center;padding:24px}
+.qcard{width:100%;max-width:380px;background:var(--paper);color:var(--ink);border-radius:6px;padding:28px 24px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:qin .35s ease-out}
+.qic{font-size:2.4rem}
+#qtext{margin:14px 0 22px;font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-size:1.3rem;line-height:1.8;letter-spacing:.04em}
+.qbtns{display:flex;gap:10px;justify-content:center}
+.qbtns button{padding:10px 22px;border-radius:999px;background:var(--acc);color:#fff}
+.qbtns .qghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.mus{position:fixed;right:14px;bottom:14px;z-index:8;padding:8px 14px;border-radius:999px;background:var(--paper);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.2);font-size:.9rem}
+@keyframes qin{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.qcard{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <section id="home">
+    <h1>今天吃什麼？</h1>
+    <p class="sub">先選今天的預算（一人一餐）</p>
+    <div id="tiers"></div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="top">
+      <button class="ghost" id="back">← 換個預算</button>
+      <button class="ghost" id="snd" aria-pressed="true">🔊 音效開</button>
+    </div>
+    <div class="title" id="ttl" style="text-align:center"></div>
+    <div class="stage"><div class="ptr"></div><canvas id="wheel" width="680" height="680" aria-label="美食轉盤"></canvas></div>
+    <button id="spin">開始轉</button>
+    <div id="result" aria-live="polite"></div>
+
+    <div class="card">
+      <h2>轉盤選項</h2>
+      <div class="chips" id="chips"></div>
+      <form class="add" id="addf">
+        <input id="inp" maxlength="8" placeholder="想加什麼？例如：披薩" autocomplete="off">
+        <button type="submit">新增</button>
+      </form>
+      <p id="msg"></p>
+      <button class="small" id="reset">還原這個等級的預設選項</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><h2 style="margin:0">最近吃過</h2><button class="small" id="clr">清除紀錄</button></div>
+      <ul class="hist" id="hist"></ul>
+    </div>
+  </section>
+</main>
+<div id="quote" class="qback" role="dialog" aria-modal="true" aria-labelledby="qtext" hidden>
+  <div class="qcard">
+    <div class="qic" id="qic">🍚</div>
+    <p id="qtext"></p>
+    <div class="qbtns"><button id="qNew" class="qghost">換一句</button><button id="qOk">開動囉</button></div>
+  </div>
+</div>
+<button id="mus" class="mus" aria-pressed="true">🎵 音樂開</button>
+<canvas id="fx"></canvas>
+
+<script>
+const TIERS = {
+  cheap: {icon:"🍜", name:"平價", price:"$150 以內", theme:"台式庶民美食，政大周邊也吃得到",
+    opts:["自助餐","鍋貼","滷肉飯","蛋餅","乾拌麵","飯糰","蚵仔煎","水餃","雞肉飯","滷味","燒臘便當","海南雞飯","肉羹麵","酸辣粉"],
+    c:{bg:"#cfd9c4",onbg:"#2f3a2a",ink:"#2f3a2a",paper:"#fbf8f0",acc:"#5f7a56",acc2:"#e8c872",soft:"#e4ead9",line:"#b4c4a6",
+       wheel:[["#6f8b64","#fff"],["#dfe6cf","#2f3a2a"],["#9db38f","#1f2a1b"],["#f1ead2","#2f3a2a"],["#4f6b47","#fff"],["#c3d1b3","#2f3a2a"]]}},
+  mid: {icon:"🧋", name:"小確幸", price:"$150～400", theme:"異國風味輕鬆吃",
+    opts:["日式拉麵","韓式拌飯","泰式打拋豬","越南河粉","咖哩飯","早午餐","漢堡","炸雞","麻辣燙","墨西哥捲餅","義大利麵","燉飯","日式定食"],
+    c:{bg:"#ecd3c8",onbg:"#4a2c27",ink:"#4a2c27",paper:"#fdf7f2",acc:"#b8645a",acc2:"#e9b872",soft:"#f6e2d9",line:"#d9b3a5",
+       wheel:[["#c97b6f","#fff"],["#f3d9c9","#4a2c27"],["#e2a97e","#3a2018"],["#f8ecdf","#4a2c27"],["#a8574d","#fff"],["#e8c4b5","#4a2c27"]]}},
+  lux: {icon:"🥂", name:"奢侈", price:"$400 以上", theme:"信義區、市政府一帶的儀式感大餐",
+    opts:["燒肉","火鍋","壽司","牛排","鐵板燒","義式餐廳","海鮮餐廳","吃到飽","法式餐酒館","日式懷石","港式飲茶","景觀餐廳","精緻下午茶","居酒屋"],
+    c:{bg:"#26364a",onbg:"#f3ead7",ink:"#26364a",paper:"#f3ead7",acc:"#3f5a7a",acc2:"#d4b06a",soft:"#dfe4ea",line:"#9fb0c3",
+       wheel:[["#1f2d40","#f3ead7"],["#d4b06a","#26364a"],["#4a6685","#fff"],["#efe3c8","#26364a"],["#31465f","#f3ead7"],["#b99552","#fff"]]}}
+};
+const BASE = {bg:"#f2ece0",onbg:"#3a3128",ink:"#3a3128",paper:"#fffdf8",acc:"#7d6b58",acc2:"#d9b97a",soft:"#ece3d2",line:"#cbbda5"};
+function applyTheme(k) { const c = k ? TIERS[k].c : BASE; for (const n in BASE) document.documentElement.style.setProperty("--" + n, c[n]); }
+const MAX = 16, MIN = 2;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+
+let tier = null, angle = 0, spinning = false, sound = true;
+let opts = {}, history = [];
+for (const k in TIERS) opts[k] = TIERS[k].opts.slice();
+try {
+  const s = JSON.parse(localStorage.getItem("foodwheel4") || "null");
+  if (s) { for (const k in TIERS) if (Array.isArray(s.opts?.[k]) && s.opts[k].length >= MIN) opts[k] = s.opts[k]; if (Array.isArray(s.history)) history = s.history.slice(0, 5); }
+} catch (e) {}
+function save() { try { localStorage.setItem("foodwheel4", JSON.stringify({opts, history})); } catch (e) {} }
+
+// ---------- 首頁 ----------
+$("tiers").innerHTML = Object.keys(TIERS).map(k => {
+  const t = TIERS[k];
+  return `<button class="tier" data-k="${k}" style="--tc:${t.c.acc2}"><span class="ic">${t.icon}</span><div><b>${t.name}　${t.price}</b><span class="t">${t.theme}</span></div></button>`;
+}).join("");
+$("tiers").addEventListener("click", e => {
+  const b = e.target.closest(".tier"); if (!b) return;
+  tier = b.dataset.k; angle = 0; applyTheme(tier);
+  $("home").hidden = true; $("play").hidden = false;
+  $("ttl").textContent = TIERS[tier].icon + " " + TIERS[tier].name + "・" + TIERS[tier].price;
+  $("result").textContent = ""; $("msg").textContent = "";
+  render(); window.scrollTo(0, 0);
+});
+$("back").onclick = () => { if (spinning) return; $("play").hidden = true; $("home").hidden = false; applyTheme(null); };
+
+// ---------- 畫轉盤 ----------
+const cv = $("wheel"), ctx = cv.getContext("2d");
+function draw() {
+  const list = opts[tier], n = list.length, a = 2 * Math.PI / n, c = cv.width / 2, r = c - 10;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const T = TIERS[tier].c; ctx.lineWidth = 6; ctx.strokeStyle = T.paper;
+  list.forEach((name, i) => {
+    const s = angle + i * a, col = T.wheel[i % T.wheel.length];
+    ctx.beginPath(); ctx.moveTo(c, c); ctx.arc(c, c, r, s, s + a); ctx.closePath();
+    ctx.fillStyle = col[0]; ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(c, c); ctx.rotate(s + a / 2);
+    ctx.fillStyle = col[1]; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.font = `700 ${n > 12 ? 28 : 34}px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif`;
+    ctx.fillText(name, r - 26, 0); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(c, c, 46, 0, 7); ctx.fillStyle = T.paper; ctx.fill();
+  ctx.font = "44px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🍴", c, c + 2);
+}
+
+// ---------- 轉動 ----------
+function spin() {
+  if (spinning || opts[tier].length < MIN) return;
+  spinning = true; lock(); $("result").textContent = "轉轉轉…";
+  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {}
+  const start = angle, end = start + (5 + Math.random() * 3) * 2 * Math.PI + Math.random() * 2 * Math.PI;
+  const dur = reduce ? 700 : 4200, t0 = performance.now();
+  (function step(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+    angle = start + (end - start) * e; draw();
+    p < 1 ? requestAnimationFrame(step) : finish();
+  })(t0);
+}
+function finish() {
+  const list = opts[tier], a = 2 * Math.PI / list.length, T = 2 * Math.PI;
+  const rel = (((-Math.PI / 2 - angle) % T) + T) % T;
+  const pick = list[Math.floor(rel / a) % list.length];
+  $("result").textContent = "🎉 今天吃：" + pick;
+  history.unshift({k: tier, name: pick}); history = history.slice(0, 5); save();
+  spinning = false; lock(); renderHist();
+  if (!reduce) confetti(); chime();
+}
+$("spin").onclick = spin;
+function lock() {
+  document.querySelectorAll("button,input").forEach(el => { if (!["snd","mus","qNew","qOk"].includes(el.id)) el.disabled = spinning; });
+}
+
+// ---------- 選項管理 ----------
+function say(t) { $("msg").textContent = t; }
+function render() { draw(); renderChips(); renderHist(); }
+function renderChips() {
+  $("chips").innerHTML = opts[tier].map((n, i) =>
+    `<span class="chip">${n.replace(/</g, "&lt;")}<button data-i="${i}" aria-label="刪除 ${n.replace(/"/g, "")}">✕</button></span>`).join("");
+}
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || spinning) return;
+  if (opts[tier].length <= MIN) return say("至少要保留 " + MIN + " 個選項");
+  opts[tier].splice(+b.dataset.i, 1); say(""); save(); draw(); renderChips();
+});
+$("addf").addEventListener("submit", e => {
+  e.preventDefault(); if (spinning) return;
+  const v = $("inp").value.trim();
+  if (!v) return say("先輸入想加的店或料理");
+  if (opts[tier].includes(v)) return say("「" + v + "」已經在轉盤上了");
+  if (opts[tier].length >= MAX) return say("最多 " + MAX + " 個選項，先刪掉幾個吧");
+  opts[tier].push(v); $("inp").value = ""; say(""); save(); draw(); renderChips();
+});
+$("reset").onclick = () => { if (spinning) return; opts[tier] = TIERS[tier].opts.slice(); say("已還原預設選項"); save(); draw(); renderChips(); };
+
+// ---------- 紀錄 ----------
+function renderHist() {
+  $("hist").innerHTML = history.length
+    ? history.map(h => `<li>${TIERS[h.k].icon} ${h.name.replace(/</g, "&lt;")}</li>`).join("")
+    : `<li class="empty">還沒有紀錄，先轉一次吧</li>`;
+}
+$("clr").onclick = () => { if (spinning) return; history = []; save(); renderHist(); };
+
+// ---------- 音效 ----------
+let audio = null;
+$("snd").onclick = () => { sound = !sound; $("snd").textContent = sound ? "🔊 音效開" : "🔇 音效關"; $("snd").setAttribute("aria-pressed", sound); };
+function chime() {
+  if (!sound || !audio) return;
+  try {
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + i * 0.12;
+      o.type = "triangle"; o.frequency.value = f; o.connect(g); g.connect(audio.destination);
+      g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.start(t); o.stop(t + 0.32);
+    });
+  } catch (e) {}
+}
+
+// ---------- 彩帶 ----------
+const fx = $("fx"), fc = fx.getContext("2d");
+function confetti() {
+  fx.width = innerWidth; fx.height = innerHeight;
+  const cols = TIERS[tier].c.wheel.map(w => w[0]).concat(TIERS[tier].c.acc2);
+  const ps = Array.from({length: 130}, () => ({
+    x: fx.width / 2, y: fx.height * 0.4, vx: (Math.random() - .5) * 16, vy: -Math.random() * 15 - 4,
+    w: 6 + Math.random() * 6, h: 10 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - .5) * .4,
+    c: cols[Math.floor(Math.random() * cols.length)]
+  }));
+  const t0 = performance.now();
+  (function f(t) {
+    const el = t - t0; fc.clearRect(0, 0, fx.width, fx.height);
+    ps.forEach(p => { p.vy += .45; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      fc.save(); fc.translate(p.x, p.y); fc.rotate(p.r); fc.fillStyle = p.c; fc.globalAlpha = Math.max(0, 1 - el / 2600);
+      fc.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); fc.restore(); });
+    el < 2600 ? requestAnimationFrame(f) : fc.clearRect(0, 0, fx.width, fx.height);
+  })(t0);
+}
+
+// ---------- 美食小語 ----------
+const QUOTES = [
+  "如果一頓飯解決不了不開心，那就吃兩頓。",
+  "煩惱再大，也大不過一碗熱騰騰的麵。",
+  "今天的你很努力，值得一隻大大的雞腿。",
+  "沒有什麼是一碗熱湯解決不了的，如果有，就再加一顆滷蛋。",
+  "吃飽了才有力氣煩惱，所以先吃吧。",
+  "選擇困難沒關係，肚子餓的時候，每個答案都是對的。",
+  "把壞心情切成小塊，配飯吃掉。",
+  "今天不想努力的話，就努力把這一餐吃好。",
+  "好好吃飯，是對自己最溫柔的事。",
+  "蛋餅配豆漿，是一天最安心的開場。",
+  "人生已經夠苦了，飯後就來點甜的。",
+  "再忙也要記得，抬頭看看眼前這一碗飯。"
+];
+let qi = -1;
+function nextQuote() {
+  let i; do { i = Math.floor(Math.random() * QUOTES.length); } while (i === qi);
+  qi = i; $("qtext").textContent = QUOTES[i];
+  $("qic").textContent = ["🍚", "🍜", "🥟", "🧋", "🍳", "🍰"][Math.floor(Math.random() * 6)];
+}
+function closeQuote() { $("quote").hidden = true; startMusic(); }
+$("qNew").onclick = nextQuote; $("qOk").onclick = closeQuote;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("quote").hidden) closeQuote(); });
+nextQuote(); $("quote").hidden = false; $("qOk").focus();
+
+// ---------- 背景輕音樂（程式即時合成，無人聲） ----------
+let musicOn = true, mTimer = null, mBus = null, mNext = 0, mBar = 0;
+const CHORDS = [[261.63,329.63,392,493.88],[220,261.63,329.63,392],[174.61,220,261.63,329.63],[196,246.94,293.66,329.63]];
+const PENT = [523.25, 587.33, 659.25, 783.99, 880];
+const BEAT = 0.8;
+function mSetup() {
+  if (mBus) return;
+  const m = audio.createGain(); m.gain.value = 0;
+  const lp = audio.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200;
+  const d = audio.createDelay(); d.delayTime.value = BEAT * 0.75;
+  const fb = audio.createGain(); fb.gain.value = 0.3;
+  const wet = audio.createGain(); wet.gain.value = 0.35;
+  m.connect(lp); lp.connect(audio.destination);
+  m.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(lp);
+  mBus = m;
+}
+function mNote(f, t, v, dur, type) {
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = type || "triangle"; o.frequency.value = f; o.connect(g); g.connect(mBus);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function mBarPlay(t) {
+  const ch = CHORDS[mBar % 4]; mBar++;
+  mNote(ch[0] / 2, t, 0.5, BEAT * 4, "sine");
+  [0, 1, 2, 3, 2, 1, 2, 3].forEach((k, i) => mNote(ch[k], t + i * BEAT / 2, 0.35, 0.9));
+  [0, 2].forEach(b => { if (Math.random() < 0.6) mNote(PENT[Math.floor(Math.random() * PENT.length)], t + (b + (Math.random() < 0.5 ? 0 : 0.5)) * BEAT, 0.2, 1.2, "sine"); });
+}
+function mTick() { while (mNext < audio.currentTime + 1.5) { mBarPlay(mNext); mNext += BEAT * 4; } }
+function startMusic() {
+  if (!musicOn) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    audio.resume(); mSetup();
+    mNext = Math.max(mNext, audio.currentTime + 0.1);
+    mBus.gain.cancelScheduledValues(audio.currentTime); mBus.gain.setTargetAtTime(0.16, audio.currentTime, 0.8);
+    if (!mTimer) { mTick(); mTimer = setInterval(mTick, 400); }
+  } catch (e) {}
+}
+function stopMusic() {
+  if (mBus) mBus.gain.setTargetAtTime(0, audio.currentTime, 0.3);
+  clearInterval(mTimer); mTimer = null;
+}
+$("mus").onclick = () => {
+  musicOn = !musicOn; $("mus").textContent = musicOn ? "🎵 音樂開" : "🔇 音樂關";
+  $("mus").setAttribute("aria-pressed", musicOn); musicOn ? startMusic() : stopMusic();
+};
+document.addEventListener("visibilitychange", () => { if (!audio) return; document.hidden ? audio.suspend() : audio.resume(); });
+</script>
+</body>
+</html>
